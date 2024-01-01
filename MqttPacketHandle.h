@@ -1,9 +1,11 @@
 #pragma once
 
 #include "MqttPacket.h"
+#include "Session.h"
 
 #include <functional>
-#include <muduo/net/TcpConnection.h> 
+#include <unordered_map>
+#include <mutex>
 
 namespace mqtt{
 
@@ -28,13 +30,16 @@ public:
 private:
     MqttPacketCallback defaultCallback_;
     MqttPacketSend send_;
+    std::unordered_map<std::string, SessionPtr> sessions_;
+    std::mutex s_mutex_;
+
+
     void handleConnection(const muduo::net::TcpConnectionPtr& conn,
-                       const mqtt::MqttPacketPtr& pkt);
+                       const mqtt::MqttPacketPtr& pkt, muduo::Timestamp time);
     void handlePingRequest(const muduo::net::TcpConnectionPtr& conn,
-                       const mqtt::MqttPacketPtr& pkt);
+                       const mqtt::MqttPacketPtr& pkt, muduo::Timestamp time);
     void handleDisconnect(const muduo::net::TcpConnectionPtr& conn,
-                       const mqtt::MqttPacketPtr& pkt);
-    
+                       const mqtt::MqttPacketPtr& pkt, muduo::Timestamp time);
 
 };
 

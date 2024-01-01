@@ -205,9 +205,17 @@ public:
     }
     */
 
+   u_char protocolVersion() { return protocolVesrsion_;}
+   std::string protocolName() { return protocolName_;}
+   uint16_t keeplive() { return keeplive_;}
+   std::string clientId() { return clientId_;}
+   ConnFlag connFlag() { return flag_;}
+   std::string userName() { return userName_; }
+   std::string password() { return password_;}
+
 private:
     ConnFlag flag_;
-    unsigned short keeplive_;
+    uint16_t keeplive_;
     std::string clientId_;
     std::string userName_;
     std::string password_;
@@ -267,8 +275,11 @@ public:
         buf->appendInt8(connRetCode_);
     }
 
+    void setConnAckFlag(ConnAckFlag connAckFlag) { connAckFlag_ = connAckFlag;};
+    void setConnRetCode(u_char rtc) { connRetCode_ = rtc;}
+
 private:
-    unsigned char connRetCode_;
+    u_char connRetCode_;
     ConnAckFlag connAckFlag_;
 };
 
@@ -514,7 +525,11 @@ using MqttPacketPtr = std::shared_ptr<mqtt::MqttPacket>;
 static mqtt_header makeHeader(packet_type type)
 {
     mqtt_header hdr;
+    hdr.bits.dup = 0;
+    hdr.bits.qos = 0;
+    hdr.bits.retain = 0;
     hdr.bits.type = type;
+
     return hdr;
 }
 

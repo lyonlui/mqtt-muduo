@@ -9,6 +9,9 @@
 #include <muduo/base/Timestamp.h>
 #include <muduo/base/Thread.h>
 #include <muduo/net/InetAddress.h>
+#include <mutex>
+
+class Session;
 
 using namespace muduo;
 using namespace muduo::net;
@@ -33,6 +36,8 @@ private:
 
     MqttCodec codec_;
     MqttPacketHandle packetHandle_;
+
+    std::mutex mutex_;
     //mutable muduo::MutexLock mutex_;
     //std::unordered_map<string, MqttSessionPtr> sessions_ GUARDED_BY(mutex_);
     void onConnection(const TcpConnectionPtr& conn);
