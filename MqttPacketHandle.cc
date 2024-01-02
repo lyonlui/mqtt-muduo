@@ -101,11 +101,13 @@ void MqttPacketHandle::handleConnection(const muduo::net::TcpConnectionPtr& conn
 
     if(connPkt->connFlag().bits.username)
     {
+        //TODO 判断用户名是否符合utf-8规范
+
         //TODO 验证用户
         if(false)   //验证失败
         {
             flag.bits.session_present = false;
-            rtc = ConnReturnCode::InvalidUser;
+            rtc = ConnReturnCode::Unauthorized;
             ack.setConnAckFlag(flag);
             ack.setConnRetCode(rtc);
             send_(conn, ack);
@@ -115,7 +117,7 @@ void MqttPacketHandle::handleConnection(const muduo::net::TcpConnectionPtr& conn
 
 
     std::string cid = connPkt->clientId();
-    
+
     if(cid.empty())
     {
         if(connPkt->connFlag().bits.clean_session)
@@ -190,15 +192,17 @@ void MqttPacketHandle::handleConnection(const muduo::net::TcpConnectionPtr& conn
     flag.bits.session_present = (connPkt->connFlag().bits.clean_session == false) 
                                     && (it != sessions_.end()); // 
 
+    
+    conn->setContext(cid);
+    session->setState(Session::State::CONNECTED);
+
     rtc = ConnReturnCode::ConnAccept;
     ack.setConnAckFlag(flag);
     ack.setConnRetCode(rtc);
     send_(conn, ack);
 
-    conn->setContext(cid);
-
-    session->lastMsgOut = muduo::Timestamp::now();
-    session->setState(Session::State::CONNECTED);
+    //session->lastMsgOut = muduo::Timestamp::now();
+    
     
 
     //TODO 设置保持连接定时器
