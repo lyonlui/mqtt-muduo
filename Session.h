@@ -24,7 +24,8 @@ public:
 
     Session(const muduo::net::TcpConnectionPtr& conn)
         : conn_(conn),
-          state_(CONNECTING)
+          state_(CONNECTING),
+          hasWill_(false)
     {
     }
 
@@ -44,15 +45,24 @@ public:
             conn_->shutdown();
     }
 
+    bool hasWill() { return hasWill_;}
+    void setWill(bool hasWill) { hasWill_ = hasWill;}
+
     muduo::Timestamp lastPing;
     muduo::Timestamp lastMsgIn;
     muduo::Timestamp lastMsgOut;
     uint16_t keepalive;
+
+    std::string willTopic_;
+    std::string willMsg_;
+    bool willRetain_;
+    uint8_t willQos_;
     
 private:
     State state_;
     MqttServer* owner_;
     muduo::net::TcpConnectionPtr conn_;
+    bool hasWill_;
 };
 
 using SessionPtr = std::shared_ptr<Session>;

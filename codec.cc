@@ -46,7 +46,7 @@ void MqttCodec::onMessage(const muduo::net::TcpConnectionPtr& conn,
             
             if (errorCode == kNoError && message)
             {
-                buf->retrieve(remaining_length + mqtt::MQTT_HEADER_LEN + offset);
+                buf->retrieve(pktLen);
                 messageCallback_(conn, message, receiveTime);
             }
             else
@@ -146,7 +146,7 @@ void MqttCodec::fillEmptyBuffer(muduo::net::Buffer* buf, const mqtt::MqttPacket&
             break;
     }
 
-    buf->prependInt8(message.getHederByte());
+    buf->prependInt8(message.getRawHeader());
     
 }
 

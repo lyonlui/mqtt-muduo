@@ -11,6 +11,17 @@
 namespace mqtt{
 
 
+static mqtt_header makeHeader(packet_type type)
+{
+    mqtt_header hdr;
+    
+    hdr.bits.dup = 0;
+    hdr.bits.qos = 0;
+    hdr.bits.retain = 0;
+    hdr.bits.type = type;
+    return hdr;
+}
+
 class MqttPacket
 {
 
@@ -50,7 +61,11 @@ public:
         return ;
     }
 
-    uint8_t getHederByte() const {return header_.byte;}
+    inline uint8_t getRawHeader() const {return header_.byte;}
+    //mqtt_header getHeader() const { return header_;}
+    inline bool isDup() { return header_.bits.dup;}
+    inline bool isRetain() { return header_.bits.retain;}
+    inline uint8_t qos() { return header_.bits.qos;}
 protected:
     mqtt_header header_;
 
@@ -73,7 +88,7 @@ public:
     {
         std::string str = MqttPacket::toString();
         char buf[256];
-        snprintf(buf, sizeof buf, "Package ID => {\"packageID\" : %hx} ", pktId_);
+        snprintf(buf, sizeof buf, "Package ID => {\"packageID\" : %d} ", pktId_);
         return str + std::string(buf);
     }
 
@@ -95,6 +110,9 @@ public:
         buf->toStringPiece();
     }
 
+    void setPktId(unsigned short pktId) { pktId_ = pktId;}
+    unsigned short pktId() { return pktId_;}
+
 private:
     unsigned short pktId_;
 
@@ -112,16 +130,16 @@ class MqttConnect : public MqttPacket
 
 
 public:
-    MqttConnect(mqtt_header hdr)
-                : MqttPacket(hdr),
-                  keeplive_(0),
-                  clientId_(""),
-                  userName_(""),
-                  password_(""),
-                  willTopic_(""),
-                  willMessage_(""),
-                  protocolName_(""),
-                  protocolVesrsion_(0)
+    MqttConnect(mqtt_header header = makeHeader(packet_type::CONNECT))
+        : MqttPacket(header),
+          keeplive_(0),
+          clientId_(""),
+          userName_(""),
+          password_(""),
+          willTopic_(""),
+          willMessage_(""),
+          protocolName_(""),
+          protocolVesrsion_(0)
     {  
     } 
     ~MqttConnect(){}
@@ -205,13 +223,22 @@ public:
     }
     */
 
-   u_char protocolVersion() { return protocolVesrsion_;}
-   std::string protocolName() { return protocolName_;}
-   uint16_t keeplive() { return keeplive_;}
-   std::string clientId() { return clientId_;}
-   ConnFlag connFlag() { return flag_;}
-   std::string userName() { return userName_; }
-   std::string password() { return password_;}
+    inline u_char protocolVersion() { return protocolVesrsion_;}
+    inline std::string protocolName() { return protocolName_;}
+    inline bool hasReserved() { return flag_.bits.reserved;}
+    inline uint16_t keeplive() { return keeplive_;}
+    inline bool cleanSession() { return flag_.bits.clean_session; }
+    inline std::string clientId() { return clientId_;}
+    //inline ConnFlag connFlag() { return flag_;}
+    inline bool hasUsername() { return flag_.bits.username;}
+    inline std::string userName() { return userName_; }
+    inline bool hasPassword() { return flag_.bits.password;}
+    inline std::string password() { return password_;}
+    inline bool hasWill() { return flag_.bits.will;}
+    inline std::string willTopic() { return willTopic_;}
+    inline std::string willMsg() { return willMessage_;}
+    inline uint8_t willQos(){ return flag_.bits.will_qos;}
+    inline bool willRetain() { return flag_.bits.will_retain;}
 
 private:
     ConnFlag flag_;
@@ -234,9 +261,8 @@ class MqttConnack : public MqttPacket
 
 
 public:
-    MqttConnack();
-    MqttConnack(mqtt_header hdr)
-                : MqttPacket(hdr)
+    MqttConnack(mqtt_header header = makeHeader(packet_type::CONNACK))
+        : MqttPacket(header)
     {  
     }
     MqttConnack(mqtt_header hdr, u_char rc, ConnAckFlag flag)
@@ -289,9 +315,8 @@ class MqttSubscribe : public MqttPacket
 
 
 public:
-    MqttSubscribe();
-    MqttSubscribe(mqtt_header hdr)
-                    : MqttPacket(hdr)
+    MqttSubscribe(mqtt_header header = makeHeader(packet_type::SUBSCRIBE))
+        : MqttPacket(header)
     {   
     }
 
@@ -303,7 +328,7 @@ public:
     {
         std::string str = MqttPacket::toString();
         char buf[256];
-        snprintf(buf, sizeof buf, "Package ID => {\"packageID\" : %hx} ", pktId_);
+        snprintf(buf, sizeof buf, "Package ID => {\"packageID\" : %d} ", pktId_);
         std::stringstream ss;
         ss << (str + buf);
         for(auto& t : tuples_)
@@ -356,9 +381,8 @@ class MqttUnsubscribe : public MqttPacket
 
 
 public:
-    MqttUnsubscribe();
-    MqttUnsubscribe(mqtt_header hdr)
-                    : MqttPacket(hdr)
+    MqttUnsubscribe(mqtt_header header = makeHeader(packet_type::UNSUBSCRIBE))
+        : MqttPacket(header)
     {
     }
 
@@ -369,7 +393,7 @@ public:
     {
         std::string str = MqttPacket::toString();
         char buf[256];
-        snprintf(buf, sizeof buf, "Package ID => {\"packageID\" : %hx} ", pktId_);
+        snprintf(buf, sizeof buf, "Package ID => {\"packageID\" : %d} ", pktId_);
         std::stringstream ss;
         ss << (str + buf);
         for(auto& t : tuples_)
@@ -418,9 +442,9 @@ private:
 class MqttSuback : public MqttPacket
 {
 public:
-    MqttSuback();
-    MqttSuback(mqtt_header hdr)
-                : MqttPacket(hdr)
+
+    MqttSuback(mqtt_header header = makeHeader(packet_type::SUBACK))
+        : MqttPacket(header)
     {    
     }
 
@@ -464,9 +488,13 @@ private:
 class MqttPublish : public MqttPacket
 {
 public:
-    MqttPublish();
-    MqttPublish(mqtt_header hdr)
-                : MqttPacket(hdr)
+    MqttPublish(mqtt_header header = makeHeader(packet_type::SUBACK))
+        : MqttPacket(header),
+          pktId_(0),
+          topicLen_(0),
+          topic_(""),
+          payload_("")
+
     { 
     }
 
@@ -512,6 +540,10 @@ public:
 
     }
 
+    inline std::string topic() { return topic_;}
+    inline std::string payload() { return payload_; }
+    unsigned short pktId() { return pktId_;}
+
 private:
     unsigned short pktId_;
     std::string topic_;
@@ -522,16 +554,6 @@ private:
 
 using MqttPacketPtr = std::shared_ptr<mqtt::MqttPacket>;
 
-static mqtt_header makeHeader(packet_type type)
-{
-    mqtt_header hdr;
-    hdr.bits.dup = 0;
-    hdr.bits.qos = 0;
-    hdr.bits.retain = 0;
-    hdr.bits.type = type;
-
-    return hdr;
-}
 
 }
 

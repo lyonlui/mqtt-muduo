@@ -33,6 +33,8 @@ private:
     std::unordered_map<std::string, SessionPtr> sessions_;
     std::mutex s_mutex_;
 
+    void handleConnectError(const muduo::net::TcpConnectionPtr& conn, 
+                        MqttConnack& ack, const uint8_t rtc);
 
     void handleConnection(const muduo::net::TcpConnectionPtr& conn,
                        const mqtt::MqttPacketPtr& pkt, muduo::Timestamp time);
@@ -40,6 +42,14 @@ private:
                        const mqtt::MqttPacketPtr& pkt, muduo::Timestamp time);
     void handleDisconnect(const muduo::net::TcpConnectionPtr& conn,
                        const mqtt::MqttPacketPtr& pkt, muduo::Timestamp time);
+    void handlePublish(const muduo::net::TcpConnectionPtr& conn,
+                       const mqtt::MqttPacketPtr& pkt, muduo::Timestamp time);
+     void handlePubRel(const muduo::net::TcpConnectionPtr& conn,
+                       const mqtt::MqttPacketPtr& pkt, muduo::Timestamp time);
+
+
+
+    bool validateUtf8(const std::string& str);
 
 };
 
